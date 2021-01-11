@@ -6,7 +6,8 @@
 library(shiny)
 library(dplyr)
 library(ggplot2)
-library(cowplot)
+#library(cowplot)
+library(gridExtra)
 
 avgb <- as.data.frame(read.csv("avgb.csv"))
 pointests <- read.csv("pointests.csv")
@@ -87,7 +88,9 @@ server <- function(input, output) {
             expand_limits(x = input$Year1) +
             theme_bw()
         
-        plot_grid(p1, p2, ncol = 1, align = "v")
+        # plot_grid from cowplot library preferred to allow vertical alignment of axes, but not supported on Shiny1, so gridExtra::grid.arrange used
+        #cowplot::plot_grid(p1, p2, ncol = 1, align = "v")
+        gridExtra::grid.arrange(p1, p2, ncol = 1)
     })    
 
     output$myTable <- renderTable({

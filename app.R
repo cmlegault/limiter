@@ -78,7 +78,7 @@ server <- function(input, output) {
                    avgb >= input$Limits[1],
                    avgb <= input$Limits[2]) %>%
             group_by(Year) %>%
-            summarize(PercentIn = n() / 10)
+            summarize(PercentIn = n() / 10, .groups="keep")
         p2 <- ggplot(myprop, aes(x=Year, y=PercentIn)) +
             geom_bar(stat = "identity") +
             geom_hline(yintercept = input$BPC,

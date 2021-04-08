@@ -24,7 +24,7 @@ df2 <- pointests %>%
 # Define UI for application 
 ui <- navbarPage("TRAC GBYT Limiter",
 
-    # Application title
+    # Original Panel
     tabPanel("Recent",
       sidebarLayout(
         sidebarPanel(
@@ -41,7 +41,7 @@ ui <- navbarPage("TRAC GBYT Limiter",
                         max = 2019,
                         step = 1,
                         value = 2014,
-                        sep=""),
+                        sep = ""),
             
             sliderInput("BPC",
                         "Blue Percent Line in Lower Plot:",
@@ -64,7 +64,29 @@ ui <- navbarPage("TRAC GBYT Limiter",
            tableOutput("myTable")
         )
       )
+    ),
+    
+    # Historical Panel
+    tabPanel("Historical",
+      sidebarLayout(
+        sidebarPanel(
+          sliderInput("hLimits",
+                      "Year Limits for MeanVal Calculations:",
+                      min = 1935,
+                      max = 2020,
+                      step = 1,
+                      value = c(1973, 1990),
+                      sep = "")
+          ),
+               
+        # Show plots and table
+        mainPanel(
+          plotOutput("hPlot"),
+          tableOutput("hTable")
+        )
+      )
     )
+    
     
 ) # close navbarPage parens
 
@@ -109,6 +131,58 @@ server <- function(input, output) {
                    ExplRate = round(100 * input$Quota / input$Limits, 1)
                    )
     })
+    
+    output$hPlot <- renderPlot({
+      myavgb <- filter(avgb, Year >= input$Year1)
+      p1 <- ggplot(filter(df1, series %in% c("Catch", "Quota")), 
+                   aes(x=Year, y=mt, color = series)) +
+        geom_point(na.rm = TRUE) +
+        geom_line(na.rm = TRUE) +
+        geom_vline(xintercept = input$hLimits, 
+                   linetype = "dashed", color = "purple", lwd = 1.5) +
+        xlab("Year") +
+        ylab("Metric Tons") +
+        theme_bw() +
+        theme(legend.position = c(0.1, 0.7))
+      
+      p2 <- ggplot(filter(df1, series %in% 
+                    c("DFO", "NEFSC_Spring", "NEFSC_Fall_lagged", "AverageB")), 
+                   aes(x=Year, y=mt, color = series)) +
+        geom_point(na.rm = TRUE) +
+        geom_line(data = filter(df1, series %in% c("AverageB")), na.rm = TRUE) +
+        geom_vline(xintercept = input$hLimits, 
+                   linetype = "dashed", color = "purple", lwd = 1.5) +
+        xlab("Year") +
+        ylab("Metric Tons") +
+        theme_bw() +
+        theme(legend.position = c(0.1, 0.7))
+      
+      p3 <- ggplot(df2, aes(x=Year, y=ER, color=series)) +
+        geom_line(na.rm = TRUE) +
+        geom_point(na.rm = TRUE) +
+        geom_vline(xintercept = input$hLimits, 
+                   linetype = "dashed", color = "purple", lwd = 1.5) +
+        xlab("Year") +
+        ylab("Exploitation Rate") +
+        theme_bw() +
+        theme(legend.position = c(0.1, 0.7))
+
+      # plot_grid from cowplot library preferred to allow vertical alignment of axes, but not supported on Shiny1, so gridExtra::grid.arrange used
+      #cowplot::plot_grid(p1, p2, ncol = 1, align = "v")
+      gridExtra::grid.arrange(p1, p2, p3, ncol = 1)
+    })    
+
+    output$hTable <- renderTable({
+      df3 <- filter(df1, Year %in% seq(input$hLimits[1], input$hLimits[2])) %>%
+        group_by(series) %>%
+        summarize(MeanVal = mean(mt, na.rm = TRUE))
+      df4 <- filter(df2, Year %in% seq(input$hLimits[1], input$hLimits[2])) %>%
+        group_by(series) %>%
+        summarize(MeanVal = mean(ER, na.rm = TRUE))
+      rbind(df3, df4) %>%
+        filter(series %in% c("Catch", "Quota", "AverageB", "ERcatch", "ERquota")) 
+    })
+    
 }
 
 # Run the application 

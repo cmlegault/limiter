@@ -24,6 +24,39 @@ df2 <- pointests %>%
 # Define UI for application 
 ui <- navbarPage("TRAC GBYT Limiter",
 
+    # Welcome Panel
+    tabPanel("Welcome",
+      sidebarLayout(
+        sidebarPanel(
+          fluidRow(
+            column(12,
+                   h2("Welcome"),
+                   br(),
+                   p("blah blah blah"),
+                   br(),
+                   p("Have fun!")
+            )
+          )
+        ),
+        
+      mainPanel(
+        h3("Recent"),
+        p("This tab is the original Limiter page. It shows..."),
+        h3("Historical"),
+        p("This is where you... "),
+        h3("Examples"),
+        p("This is the fun part???"),
+        h3("Technical Details"),
+        p("Under the hood secrets..."),
+        p("Use p() to set off paragraphs here"),
+        p("Code for this R Shiny app is available at ",
+          a("https://github.com/cmlegault/limiter", href="https://github.com/cmlegault/limiter", target="_blank")),
+        p("Special thanks to TRAC, TMGC, the NEFMC's SSC, and Diane Rielinger for providing feedback on earlier versions of this app.")
+      )
+      )
+    ),
+
+
     # Original Panel
     tabPanel("Recent",
       sidebarLayout(

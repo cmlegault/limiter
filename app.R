@@ -13,13 +13,11 @@ avgb <- as.data.frame(read.csv("avgb.csv"))
 pointests <- read.csv("pointests.csv")
 
 # Define UI for application 
-ui <- fluidPage(
+ui <- navbarPage("TRAC GBYT Limiter",
 
     # Application title
-    titlePanel("TRAC GBYT Limiter"),
-
-    # Sidebar with slider inputs 
-    sidebarLayout(
+    tabPanel("Recent",
+      sidebarLayout(
         sidebarPanel(
             sliderInput("Limits",
                         "Limits for Average Biomass:",
@@ -56,8 +54,10 @@ ui <- fluidPage(
            plotOutput("myPlot"),
            tableOutput("myTable")
         )
+      )
     )
-)
+    
+) # close navbarPage parens
 
 # Define server logic 
 server <- function(input, output) {

@@ -120,9 +120,26 @@ ui <- navbarPage("TRAC GBYT Limiter",
           tableOutput("hTable")
         )
       )
+    ),
+
+    # Examples Panel
+    tabPanel("Examples",
+      sidebarLayout(
+        sidebarPanel(
+          radioButtons("example",
+                       "Scenario",
+                       choices = c("Default", "Limits First", "Catch First", "Ref Points"),
+                       selected = "Default")
+               ),
+               
+               # Show plots and table
+               mainPanel(
+                 plotOutput("exPlot"),
+                 textOutput("exText")
+               )
+      )
     )
-    
-    
+
 ) # close navbarPage parens
 
 # Define server logic 
@@ -216,6 +233,49 @@ server <- function(input, output) {
         summarize(MeanVal = mean(ER, na.rm = TRUE), .groups = "drop_last")
       rbind(df3, df4) %>%
         filter(series %in% c("Catch", "Quota", "AverageB", "ERcatch", "ERquota")) 
+    })
+
+    output$exPlot <- renderPlot({
+      exavgb <- seq(1, 15000)
+      if (input$example == "Default"){
+        exlimits <- c(600, 5000)
+        exquota <- 200
+        exsetquota <- rep(exquota, length(exavgb))
+        exsetquota[exavgb < exlimits[1]] <- exavgb[exavgb < exlimits[1]] * 0.06
+        exsetquota[exavgb > exlimits[2]] <- exavgb[exavgb > exlimits[2]] * 0.06
+        exer <- exsetquota / exavgb
+      }
+
+      exdf <- data.frame(exavgb = exavgb,
+                         exlimits = exlimits,
+                         exsetquota = exsetquota,
+                         exer = exer)
+      
+      p1 <- ggplot(exdf, aes(x=exavgb, y=exsetquota)) +
+        geom_line(lwd = 1.5) +
+        geom_vline(xintercept = exlimits, 
+                   linetype = "dashed", color = "red", lwd = 1.5) +
+        xlab("Average Survey Biomass (mt)") +
+        ylab("Quota (mt)") +
+        theme_bw()
+      
+      p2 <- ggplot(exdf, aes(x=exavgb, y=exer)) +
+        geom_line(lwd = 1.5) +
+        geom_vline(xintercept = exlimits, 
+                   linetype = "dashed", color = "red", lwd = 1.5) +
+        xlab("Average Survey Biomass (mt)") +
+        ylab("Exploitation Rate") +
+        theme_bw()
+      
+      # plot_grid from cowplot library preferred to allow vertical alignment of axes, but not supported on Shiny1, so gridExtra::grid.arrange used
+      #cowplot::plot_grid(p1, p2, ncol = 1, align = "v")
+      gridExtra::grid.arrange(p1, p2, ncol = 2)
+    })    
+    
+    output$exText <- renderText({
+      if (input$example == "Default"){
+        "Some text here"
+      }
     })
     
 }

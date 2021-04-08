@@ -69,7 +69,7 @@ server <- function(input, output) {
             geom_hline(yintercept = input$Limits, 
                        linetype = "dashed", color = "red", lwd = 1.5) +
             geom_point(data=filter(pointests, Year >= input$Year1), 
-                       aes(x=factor(Year), y=Average)) +
+                       aes(x=factor(Year), y=AverageB)) +
             xlab("Year") +
             ylab("Average Survey Biomass (mt)") +
             theme_bw()

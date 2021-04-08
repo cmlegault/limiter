@@ -5,12 +5,21 @@
 
 library(shiny)
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 #library(cowplot)
 library(gridExtra)
 
 avgb <- as.data.frame(read.csv("avgb.csv"))
-pointests <- read.csv("pointests.csv")
+pointests <- read.csv("pointests.csv") 
+
+df1 <- pivot_longer(pointests, !Year, names_to = "series", values_to = "mt")
+
+df2 <- pointests %>%
+  mutate(ERcatch = Catch / AverageB,
+         ERquota = Quota / AverageB) %>%
+  select(Year, ERcatch, ERquota) %>%
+  pivot_longer(!Year, names_to = "series", values_to = "ER")
 
 # Define UI for application 
 ui <- navbarPage("TRAC GBYT Limiter",

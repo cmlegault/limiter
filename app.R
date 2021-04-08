@@ -175,10 +175,10 @@ server <- function(input, output) {
     output$hTable <- renderTable({
       df3 <- filter(df1, Year %in% seq(input$hLimits[1], input$hLimits[2])) %>%
         group_by(series) %>%
-        summarize(MeanVal = mean(mt, na.rm = TRUE))
+        summarize(MeanVal = mean(mt, na.rm = TRUE), .groups = "drop_last")
       df4 <- filter(df2, Year %in% seq(input$hLimits[1], input$hLimits[2])) %>%
         group_by(series) %>%
-        summarize(MeanVal = mean(ER, na.rm = TRUE))
+        summarize(MeanVal = mean(ER, na.rm = TRUE), .groups = "drop_last")
       rbind(df3, df4) %>%
         filter(series %in% c("Catch", "Quota", "AverageB", "ERcatch", "ERquota")) 
     })

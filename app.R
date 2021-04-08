@@ -32,7 +32,7 @@ ui <- navbarPage("TRAC GBYT Limiter",
             column(12,
                    h2("Welcome"),
                    br(),
-                   p("blah blah blah"),
+                   p("This app provides survey, catch, and quota data for Georges Bank yellowtail flounder in a way that allows exploration of different management approaches. It does not conduct any simulations or forecasts of what will happen in the future. Instead, it allows the user to examine how the stock has behaved in the past. This tab provides a short description of what can be found on the other tabs along with some technical details."),
                    br(),
                    p("Have fun!")
             )
@@ -41,17 +41,19 @@ ui <- navbarPage("TRAC GBYT Limiter",
         
       mainPanel(
         h3("Recent"),
-        p("This tab is the original Limiter page. It shows..."),
+        p("This tab is the original TRAC GBYT Limiter. Conceptually, the idea is to find a set of limits for the average survey biomass that would allow a constant quota to be applied. The current Empirical Approach changes the quota each year in response to changes in the average survey biomass, but the catch has been well below the quota in recent years and the stock is at low abundance. This part of the app was developed during the 2020 TRAC meeting and recommended for future management use."),
+        p("The user moves sliders to change 1) the limits for the average survey biomass, 2) how many years to show in the plots, 3) a visual guide for the percent within plot, and 4) the constant quota. These values are reflected in the plots and table. The top panel shows the distributions of the average survey biomass by year with the limits as horizontal red lines. The next panel shows the percentage of each annual distribution that falls within the limits selected. The horizontal blue line is just a visual aid to ease comparison of percentages across years. The bottom table shows for the two limits the catch associated with the current 6% exploitation rate associated with the Empirical Approach (Catch6) as well as the exploitation rate (ExplRate) associated with the quota being fully caught if the average survey biomass was exactly at either of the limits. These exploitation rates can be used as guides to see if the limits are too narrow or too wide."),
         h3("Historical"),
-        p("This is where you... "),
+        p("This tab shows the history of this stock and fishery. The user moves the sliders to select a range of years within which (including the end points) the mean value of the catch, quota, average survey biomass, and exploitation rates associated with the catch and quota are computed. The top panel shows the catch and TMGC quota. The middle panel shows the three surveys and the average of the available surveys in that year (note the surveys begin in 1987, 1968, and 1964 for the DFO, NEFSC Spring and NEFSC Fall lagged, respectively). The table at the bottom shows the means with any missing information not included in the mean calculation. In this table, NA stands for Not Available, meaning there was no information for any of the years selected for that variable."),
         h3("Examples"),
-        p("This is the fun part???"),
+        p("The following examples are for demonstration purposes only. They are included to show how this app could be used to help decide on limits and quota, and potentially on reference points as well."),
         h3("Technical Details"),
-        p("Under the hood secrets..."),
-        p("Use p() to set off paragraphs here"),
+        p("The Historical tab uses a non-standard approach to create the time series for the two NEFSC surveys. Specifically, it converts the Albatross catch/tow to Bigelow catch/tow and then expands this amount as if the Bigelow had been used in these years. This is not standard practice due to the potential bias introduced due to Albatross tows catching zero fish when the Bigelow would have caught fish (a zero catch of yellowtail by the Albatross gets converted to a zero catch by the Bigelow.) In years of high abundance, there is probably not much bias introduced, because many of the Albatross tows caught yellowtail, but the bias could be noticable in years of low abundance. The magnitude of this bias cannot be easily estimated and all the Albatross years (2008 and prior) are assumed equivalent to the Bigelow years in these plots."),
+        p("The violin plots in the Recent tab are based on 1,000 values coming from each of the surveys in a given year. The survey CV values are used to create lognormal standard deviations using the formula sd = sqrt(log(1 + CV*CV)). These survey and year specific sd values are then used to generate random values from a lognormal distribution with mean one. The random deviates then multiply the survey kg/tow to generate uncertainty in the survey observations. This approach assumes independence of the random deviations among the surveys within a year and that the only source of uncertainty in the calculation of the average survey biomass comes from the stratified mean estimates of the surveys. Additional sources of uncertainty, such as variability in the survey q, area swept by a tow, and survey area are not included in this variability."),
+        p("There are a number of caveats associated with this approach. Past performance does not ensure future benefits. The relationships that have been observed in the past may not adequately predict what happens in the future, especially since there is no mechanistic model underlying these values. For example, large changes in fishery selectivity could create changes in the relationship between survey catch and fishery catch. This approach, along with the Empirical Approach, assumes that at least one survey is available, but is expected to perform best when all three surveys are available. Similarly, changes in how the survey observations of catch/tow are expanded to survey biomass would require recalculations for both this approach and the Empirical Approach."),
         p("Code for this R Shiny app is available at ",
           a("https://github.com/cmlegault/limiter", href="https://github.com/cmlegault/limiter", target="_blank")),
-        p("Special thanks to TRAC, TMGC, the NEFMC's SSC, and Diane Rielinger for providing feedback on earlier versions of this app.")
+        p("Special thanks to TRAC, TMGC, and the NEFMC's SSC for providing feedback on earlier versions of this app.")
       )
       )
     ),

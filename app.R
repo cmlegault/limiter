@@ -128,8 +128,8 @@ ui <- navbarPage("TRAC GBYT Limiter",
         sidebarPanel(
           radioButtons("example",
                        "Scenario",
-                       choices = c("Default", "Limits First", "Catch First", "Ref Points"),
-                       selected = "Default")
+                       choices = c("Empirical", "Initial", "Limits First", "Catch First", "Ref Points"),
+                       selected = "Initial")
                ),
                
                # Show plots and table
@@ -236,33 +236,35 @@ server <- function(input, output) {
     })
 
     output$exPlot <- renderPlot({
-      exavgb <- seq(1, 15000)
-      if (input$example == "Default"){
+      exavgb <- seq(1, 15000, 10)
+      
+      if (input$example == "Empirical"){
+        exlimits <- NA
+        exdf <- data.frame(exavgb = exavgb, 
+                           exsetquota = exavgb * 0.06) %>%
+          mutate(exer = exsetquota / exavgb)
+      }
+      
+      if (input$example == "Initial"){
         exlimits <- c(600, 5000)
         exquota <- 200
-        exsetquota <- rep(exquota, length(exavgb))
-        exsetquota[exavgb < exlimits[1]] <- exavgb[exavgb < exlimits[1]] * 0.06
-        exsetquota[exavgb > exlimits[2]] <- exavgb[exavgb > exlimits[2]] * 0.06
-        exer <- exsetquota / exavgb
+        exdf <- data.frame(exavgb = exavgb) %>%
+          mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
+                                       (exavgb > exlimits[2]), 
+                                     exavgb * 0.06, exquota)) %>%
+          mutate(exer = exsetquota / exavgb)
       }
 
-      exdf <- data.frame(exavgb = exavgb,
-                         exlimits = exlimits,
-                         exsetquota = exsetquota,
-                         exer = exer)
-      
       p1 <- ggplot(exdf, aes(x=exavgb, y=exsetquota)) +
         geom_line(lwd = 1.5) +
-        geom_vline(xintercept = exlimits, 
-                   linetype = "dashed", color = "red", lwd = 1.5) +
+        {if (!all(is.na(exlimits))) geom_vline(xintercept = exlimits, linetype = "dashed", color = "red", lwd = 1.5)} +
         xlab("Average Survey Biomass (mt)") +
         ylab("Quota (mt)") +
         theme_bw()
       
       p2 <- ggplot(exdf, aes(x=exavgb, y=exer)) +
         geom_line(lwd = 1.5) +
-        geom_vline(xintercept = exlimits, 
-                   linetype = "dashed", color = "red", lwd = 1.5) +
+        {if (!all(is.na(exlimits))) geom_vline(xintercept = exlimits, linetype = "dashed", color = "red", lwd = 1.5)} +
         xlab("Average Survey Biomass (mt)") +
         ylab("Exploitation Rate") +
         theme_bw()
@@ -273,9 +275,14 @@ server <- function(input, output) {
     })    
     
     output$exText <- renderText({
-      if (input$example == "Default"){
-        "Some text here"
+      if (input$example == "Empirical"){
+        "Empirical text here"
       }
+      
+      else if (input$example == "Initial"){
+        "Initial text here"
+      }
+      
     })
     
 }

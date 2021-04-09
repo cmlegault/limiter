@@ -269,14 +269,12 @@ server <- function(input, output) {
         ylab("Exploitation Rate") +
         theme_bw()
       
-      # plot_grid from cowplot library preferred to allow vertical alignment of axes, but not supported on Shiny1, so gridExtra::grid.arrange used
-      #cowplot::plot_grid(p1, p2, ncol = 1, align = "v")
       gridExtra::grid.arrange(p1, p2, ncol = 2)
     })    
     
     output$exText <- renderText({
       if (input$example == "Empirical"){
-        "Empirical text here"
+        "The Empirical Approach does not contain any limits (vertical red lines). In this example, the plots use the most recent value of 6% for the exploitation rate regardless of the average survey biomass. This results in a linear relationship between the quota and the average survey biomass (with slope 0.06). In every recent assessment, time has been spent discussing whether 6% is the appropriate exploitation rate to use, and these discussions would be expected to occur in future assessments. There is also no pre-set value that would indicate the stock has increased or decreased sufficiently to justify a different exploitation rate. So every assessment will have this discussion, with the outcome depending to some extent on who is in the room."
       }
       
       else if (input$example == "Initial"){

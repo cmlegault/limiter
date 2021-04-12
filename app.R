@@ -128,7 +128,7 @@ ui <- navbarPage("TRAC GBYT Limiter",
         sidebarPanel(
           radioButtons("example",
                        "Scenario",
-                       choices = c("Empirical", "Initial", "Limits First", "Catch First", "Ref Points"),
+                       choices = c("Empirical", "Initial", "Limits First", "Quota First", "Ref Points"),
                        selected = "Initial")
                ),
                
@@ -255,6 +255,36 @@ server <- function(input, output) {
           mutate(exer = exsetquota / exavgb)
       }
 
+      if (input$example == "Limits First"){
+        exlimits <- c(900, 8500)
+        exquota <- 300
+        exdf <- data.frame(exavgb = exavgb) %>%
+          mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
+                                       (exavgb > exlimits[2]), 
+                                     exavgb * 0.06, exquota)) %>%
+          mutate(exer = exsetquota / exavgb)
+      }
+      
+      if (input$example == "Quota First"){
+        exlimits <- c(800, 2600)
+        exquota <- 160
+        exdf <- data.frame(exavgb = exavgb) %>%
+          mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
+                                       (exavgb > exlimits[2]), 
+                                     exavgb * 0.06, exquota)) %>%
+          mutate(exer = exsetquota / exavgb)
+      }
+
+      if (input$example == "Ref Points"){
+        exlimits <- c(800, 2600)
+        exquota <- 160
+        exdf <- data.frame(exavgb = exavgb) %>%
+          mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
+                                       (exavgb > exlimits[2]), 
+                                     exavgb * 0.06, exquota)) %>%
+          mutate(exer = exsetquota / exavgb)
+      }
+      
       p1 <- ggplot(exdf, aes(x=exavgb, y=exsetquota)) +
         geom_line(lwd = 1.5) +
         {if (!all(is.na(exlimits))) geom_vline(xintercept = exlimits, linetype = "dashed", color = "red", lwd = 1.5)} +
@@ -278,7 +308,19 @@ server <- function(input, output) {
       }
       
       else if (input$example == "Initial"){
-        "Initial text here"
+        "These plots reflect the initial settings when the Shiny app is opened. The limits are set at 600 and 5,000 mt (red vertical lines) and the constant quota is 200 mt. In this example, the Empirical Approach exploitation rate of 6% is assumed to apply outside the limits. This combination of limits and quota results in a declining exploitation rate as the average survey biomass increases between the limits. At the lower limit of 600 mt, the exploiation rate is 33.3%, which may be considered too high by some. At the upper limit of 5,000 mt, the exploitation rate is 4%, which is below the current Empirical Approach rate. There are discontinuities in both catch and exploitation rate as the average survey biomass crosses both limits."
+      }
+      
+      else if(input$example == "Limits First"){
+        "One way to use this tool is to focus on the limits first. For example, if at least 80% of the distributions of average survey biomass are desired to be within the limits each year since 2014, then the limits could be set at 900 and 8,500 mt. The next step could be to select a quota that balances the exploitation rate within the limits, for example 300 mt (as shown above). This results in exploitation rates of 33.3% and 3.5% at the limits. Alternatively, a maximum exploiation rate could be used based on the lower limit, or a minimum exploitation rate based on the upper limit. This example again shows the Empirical Approach exploitation rate of 6% outside the limits."
+      }
+      
+      else if(input$example == "Quota First"){
+        "Another way to use this tool is to set the quota first. In this example, a quota of 150 mt was selected based on recent quotas and the needs of the fishery. Once the quota is set, the lower limit was found by not allowing the exploitation rate to exceed 20%, resulting in the lower limit of 800 mt. The upper limit was set to remove the discontinuities in the catch and exploitation plots when the Empirical Approach was applied outside the limits. This resulted in the calculated value of 2,666.67 mt, which was rounded down to 2,600 mt."
+      }
+      
+      else if(input$example == "Ref Points"){
+        "Ref points"
       }
       
     })

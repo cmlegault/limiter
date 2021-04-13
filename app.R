@@ -276,13 +276,12 @@ server <- function(input, output) {
       }
 
       if (input$example == "Ref Points"){
-        exlimits <- c(800, 2600)
-        exquota <- 160
+        exlimits <- NA
+        exquota <- NA
         exdf <- data.frame(exavgb = exavgb) %>%
-          mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
-                                       (exavgb > exlimits[2]), 
-                                     exavgb * 0.06, exquota)) %>%
-          mutate(exer = exsetquota / exavgb)
+          mutate(exer = ifelse((exavgb > 2600),
+                               (0.06 + (exavgb-2600) * (0.275-0.06) / (63900-2600)), 0.06)) %>%
+          mutate(exsetquota = exer * exavgb)
       }
       
       p1 <- ggplot(exdf, aes(x=exavgb, y=exsetquota)) +
@@ -297,6 +296,7 @@ server <- function(input, output) {
         {if (!all(is.na(exlimits))) geom_vline(xintercept = exlimits, linetype = "dashed", color = "red", lwd = 1.5)} +
         xlab("Average Survey Biomass (mt)") +
         ylab("Exploitation Rate") +
+        expand_limits(y = 0) +
         theme_bw()
       
       gridExtra::grid.arrange(p1, p2, ncol = 2)
@@ -320,7 +320,7 @@ server <- function(input, output) {
       }
       
       else if(input$example == "Ref Points"){
-        "Ref points"
+        "This tool can also be used in conjunction with setting reference points. The current fishing mortality reference level (Fref) is 0.25, based on F0.1 and F40% from a VPA which assumed an M of 0.2. This reference point cannot be used directly anymore, but could be converted to an exploitation rate using the equation ER = F(1-exp(-Z))/Z, which results in 0.20. Alternatively, the historical tab can be used to look for a period when catch and biomass were thought to be in a level near MSY or Bmsy. For example, if the years 1967-1976 were thought to be appropriate, the averages during this period could be used as reference points, producing Bref = 63,900 mt, Catchref = 17,600 mt, and ERref = 27.5%. The ER reference points could then be used to limit the exploitation rate in any of the other approaches. The Bref could be used to determine when to change from a reduced exploitation rate to ERref, perhaps gradually as the average survey biomass increased. The example plotted has the exploitation rate increase linearly from 6% at 2,600 mt to 27.5% at 63,900 mt. Note the large change in the y-axis scale for the quota plot."
       }
       
     })

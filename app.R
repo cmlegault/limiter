@@ -147,6 +147,7 @@ server <- function(input, output) {
 
     output$myPlot <- renderPlot({
         myavgb <- filter(avgb, Year >= input$Year1)
+        yearvals <- sort(unique(myavgb$Year))
         p1 <- ggplot(myavgb, aes(x=factor(Year), y=avgb)) +
             geom_violin() +
             geom_hline(yintercept = input$Limits, 
@@ -167,6 +168,7 @@ server <- function(input, output) {
             geom_bar(stat = "identity") +
             geom_hline(yintercept = input$BPC,
                        linetype = "dashed", color = "blue", lwd = 1.5) +
+            scale_x_continuous(name = "Year", breaks = yearvals) +
             ylab("Percent of Average Survey Biomass \nBetween Selected Limits") +
             expand_limits(x = input$Year1) +
             theme_bw()

@@ -1,6 +1,7 @@
 # create_avgb
 # modification of GBYT_empirical_approach_uncertainty
 # to create input file for GBYT_limiter
+# also use bootstraps from Miller et al. directly in calculating avgb
 
 # set working directory to source file location to begin
 
@@ -163,4 +164,62 @@ avgb <- compute_average_biomass(flag)
 myavgb <- data.frame(Year = avgb$ab.res$Year,
                      avgb = avgb$ab.res$AverageBiomass)
 
+#write.csv(myavgb, file="avgb.csv", row.names = FALSE)
+
+# now get DFO results from above and combine with Miller et al. bootstraps
+dfo.kg.tow <- survey.kg.tow %>%
+  filter(Survey == "DFO")
+dfo.vals <- tibble(Year = integer(),
+                   boot = integer(),
+                   DFO = double())
+for (iter in 1:1000){
+  kg.tow.use <- mutate(dfo.kg.tow,  kg.tow = kg.tow * rand.kg.tow.mult[iter,1:11]) # first 11 columns are DFO, next 11 are Spring, last 11 are Fall
+  res <- left_join(kg.tow.use, wing.areas, by="Survey") %>%
+    mutate(msab = kg.tow * (Survey.Area / tow.area) / 1000) %>%
+    mutate(biomass = msab / (chain2rockhopper.conv * 1.0)) 
+  thisvals <- tibble(Year = dfo.kg.tow$Year,
+                     boot = iter,
+                     DFO = res$biomass)
+  dfo.vals <- rbind(dfo.vals, thisvals)
+}
+dfo.vals
+checkdfo <- dfo.vals %>%
+  group_by(Year) %>%
+  summarize(meanval = mean(DFO), sd = sd(DFO), medianval = median(DFO))
+checkdfo
+
+# get the Miller et al. bootstrap values, remember to shift Fall
+miller <- read.csv("Miller_etal_boot_data.csv")
+miller
+spring.vals <- miller %>%
+  rename(Year = year, Spring = spring) %>%
+  select(Year, boot, Spring)
+spring.vals
+fall.vals <- miller %>%
+  mutate(year = year + 1) %>% # here is the lagging for Fall
+  rename(Year = year, Fall = fall) %>%
+  select(Year, boot, Fall)
+fall.vals
+
+xx <- left_join(dfo.vals, spring.vals, by = c("Year", "boot")) %>%
+  left_join(fall.vals, by = c("Year", "boot")) %>%
+  rowwise() %>%
+  mutate(avgb = mean(c(DFO, Spring, Fall), na.rm = TRUE)) %>%
+  arrange(Year, boot)
+
+# save file with both original and Miller avgb values
+myavgb <- myavgb %>%
+  mutate(source = "original")
+Milleravgb <- xx %>%
+  mutate(source = "Miller") %>%
+  select(Year, avgb, source)
+bothavgb <- rbind(myavgb, Milleravgb)
 write.csv(myavgb, file="avgb.csv", row.names = FALSE)
+
+# compare time series
+ggplot(bothavgb, aes(x=factor(Year), y=avgb, fill=source)) +
+  geom_violin() +
+  theme_bw()
+ggplot(filter(bothavgb, as.integer(as.character(Year))>=2014), aes(x=factor(Year), y=avgb, fill=source)) +
+  geom_violin() +
+  theme_bw()

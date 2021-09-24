@@ -41,7 +41,7 @@ ui <- navbarPage("TRAC GBYT Limiter",
         
       mainPanel(
         h3("Recent"),
-        p("This tab is the original TRAC GBYT Limiter. Conceptually, the idea is to find a set of limits for the average survey biomass that would allow a constant quota to be applied. The current Empirical Approach changes the quota each year in response to changes in the average survey biomass, but the catch has been well below the quota in recent years and the stock is at low abundance. This part of the app was developed during the 2020 TRAC meeting and recommended for future management use."),
+        p("This tab is the original TRAC GBYT Limiter. Conceptually, the idea is to find a set of limits for the average survey biomass that would allow a constant quota to be applied. The current Empirical Approach changes the quota each year in response to changes in the average survey biomass, but the catch has been well below the quota in recent years and the stock is at low abundance. This part of the app was developed during the 2020 TRAC meeting and recommended for future management use. After the 2021 TRAC meeting, this tab was modified to show both the original distributions and percentiles as well as the results when the NEFSC spring and fall surveys were estimated using the newly accepted Miller et al. approach."),
         p("The user moves sliders to change 1) the limits for the average survey biomass, 2) how many years to show in the plots, 3) a visual guide for the percent of average survey biomass that is between the two selected limits, and 4) the constant quota. These values are reflected in the plots and table. The top panel shows the distributions of the average survey biomass by year with the limits as horizontal red lines. The next panel shows the percentage of each annual average survey biomass distribution that falls within the limits selected. The horizontal blue line is just a visual aid to ease comparison of percentages across years. The bottom table shows for the two average survey biomass limits the catch associated with the current 6% exploitation rate associated with the Empirical Approach (Catch6) as well as the exploitation rate (ExplRate) associated with the quota being fully caught if the average survey biomass was exactly at either of the limits. These exploitation rates can be used as guides to see if the average survey biomass limits are too narrow or too wide for the selected quota."),
         h3("Historical"),
         p("This tab shows the history of this stock and fishery. The user moves the sliders to select a range of years within which (including the end points) the mean value of the catch, quota, average survey biomass, and exploitation rates associated with the catch and quota are computed. The top panel shows the catch and TMGC quota. The middle panel shows the three surveys and the average of the available surveys in that year (note the surveys begin in 1987, 1968, and 1964 for the DFO, NEFSC Spring and NEFSC Fall lagged, respectively). The table at the bottom shows the means with any missing information not included in the mean calculation. In this table, NA stands for Not Available, meaning there was no information for any of the years selected for that variable."),
@@ -148,12 +148,12 @@ server <- function(input, output) {
     output$myPlot <- renderPlot({
         myavgb <- filter(avgb, Year >= input$Year1)
         yearvals <- sort(unique(myavgb$Year))
-        p1 <- ggplot(myavgb, aes(x=factor(Year), y=avgb)) +
+        p1 <- ggplot(myavgb, aes(x=factor(Year), y=avgb, fill=Source)) +
             geom_violin() +
             geom_hline(yintercept = input$Limits, 
                        linetype = "dashed", color = "red", lwd = 1.5) +
-            geom_point(data=filter(pointests, Year >= input$Year1), 
-                       aes(x=factor(Year), y=AverageB)) +
+#            geom_point(data=filter(pointests, Year >= input$Year1), 
+#                       aes(x=factor(Year), y=AverageB)) +
             xlab("Year") +
             ylab("Average Survey Biomass (mt)") +
             theme_bw()
@@ -162,10 +162,10 @@ server <- function(input, output) {
             filter(Year >= input$Year1,
                    avgb >= input$Limits[1],
                    avgb <= input$Limits[2]) %>%
-            group_by(Year) %>%
+            group_by(Year, Source) %>%
             summarize(PercentIn = n() / 10, .groups="keep")
-        p2 <- ggplot(myprop, aes(x=Year, y=PercentIn)) +
-            geom_bar(stat = "identity") +
+        p2 <- ggplot(myprop, aes(x=Year, y=PercentIn, fill=Source)) +
+            geom_bar(stat = "identity", position="dodge") +
             geom_hline(yintercept = input$BPC,
                        linetype = "dashed", color = "blue", lwd = 1.5) +
             scale_x_continuous(name = "Year", breaks = yearvals) +

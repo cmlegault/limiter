@@ -209,17 +209,17 @@ xx <- left_join(dfo.vals, spring.vals, by = c("Year", "boot")) %>%
 
 # save file with both original and Miller avgb values
 myavgb <- myavgb %>%
-  mutate(source = "original")
+  mutate(Source = "original")
 Milleravgb <- xx %>%
-  mutate(source = "Miller") %>%
-  select(Year, avgb, source)
+  mutate(Source = "Miller") %>%
+  select(Year, avgb, Source)
 bothavgb <- rbind(myavgb, Milleravgb)
-write.csv(myavgb, file="avgb.csv", row.names = FALSE)
+write.csv(bothavgb, file="avgb.csv", row.names = FALSE)
 
 # compare time series
-ggplot(bothavgb, aes(x=factor(Year), y=avgb, fill=source)) +
+ggplot(bothavgb, aes(x=factor(Year), y=avgb, fill=Source)) +
   geom_violin() +
   theme_bw()
-ggplot(filter(bothavgb, as.integer(as.character(Year))>=2014), aes(x=factor(Year), y=avgb, fill=source)) +
+ggplot(filter(bothavgb, as.integer(as.character(Year))>=2014), aes(x=factor(Year), y=avgb, fill=Source)) +
   geom_violin() +
   theme_bw()

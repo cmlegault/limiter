@@ -42,14 +42,14 @@ ui <- navbarPage("TRAC GBYT Limiter",
       mainPanel(
         h3("Recent"),
         p("This tab is the original TRAC GBYT Limiter. Conceptually, the idea is to find a set of limits for the average survey biomass that would allow a constant quota to be applied. The current Empirical Approach changes the quota each year in response to changes in the average survey biomass, but the catch has been well below the quota in recent years and the stock is at low abundance. This part of the app was developed during the 2020 TRAC meeting and recommended for future management use. After the 2021 TRAC meeting, this tab was modified to show both the original distributions and percentiles as well as the results when the NEFSC spring and fall surveys were estimated using the newly accepted Miller et al. approach."),
-        p("The user moves sliders to change 1) the limits for the average survey biomass, 2) how many years to show in the plots, 3) a visual guide for the percent of average survey biomass that is between the two selected limits, and 4) the constant quota. These values are reflected in the plots and table. The top panel shows the distributions of the average survey biomass by year with the limits as horizontal red lines. The next panel shows the percentage of each annual average survey biomass distribution that falls within the limits selected. The horizontal blue line is just a visual aid to ease comparison of percentages across years. The bottom table shows for the two average survey biomass limits the catch associated with the current 6% exploitation rate associated with the Empirical Approach (Catch6) as well as the exploitation rate (ExplRate) associated with the quota being fully caught if the average survey biomass was exactly at either of the limits. These exploitation rates can be used as guides to see if the average survey biomass limits are too narrow or too wide for the selected quota."),
+        p("The user moves sliders to change 1) the limits for the average survey biomass, 2) how many years to show in the plots, 3) a visual guide for the percent of average survey biomass that is between the two selected limits, and 4) the constant quota. These values are reflected in the plots and table. The top panel shows the distributions of the average survey biomass by year with the limits as horizontal red lines. The next panel shows the percentage of each annual average survey biomass distribution that falls within the limits selected. The horizontal blue line is just a visual aid to ease comparison of percentages across years. The bottom table shows for the two average survey biomass limits the catch associated with the 6% and 7% exploitation rates associated with the Empirical Approach (Catch6 and Catch7, respectively) as well as the exploitation rate (ExplRate) associated with the quota being fully caught if the average survey biomass was exactly at either of the limits. These exploitation rates can be used as guides to see if the average survey biomass limits are too narrow or too wide for the selected quota."),
         h3("Historical"),
         p("This tab shows the history of this stock and fishery. The user moves the sliders to select a range of years within which (including the end points) the mean value of the catch, quota, average survey biomass, and exploitation rates associated with the catch and quota are computed. The top panel shows the catch and TMGC quota. The middle panel shows the three surveys and the average of the available surveys in that year (note the surveys begin in 1987, 1968, and 1964 for the DFO, NEFSC Spring and NEFSC Fall lagged, respectively). The table at the bottom shows the means with any missing information not included in the mean calculation. In this table, NA stands for Not Available, meaning there was no information for any of the years selected for that variable."),
         h3("Examples"),
         p("The examples shown are for demonstration purposes only. They are included to show how this app could be used to help decide on average survey biomass limits and quota, and potentially on reference points as well. There are numerous combinations of approaches and other approaches that could be used to set average survey biomass limits, quota, and potentially reference points."),
         h3("Technical Details"),
         p("The Historical tab uses a non-standard approach to create the time series for the two NEFSC surveys. Specifically, it converts the Albatross catch/tow to Bigelow catch/tow and then expands this amount as if the Bigelow had been used in these years. This is not standard practice due to the potential bias introduced due to Albatross tows catching zero fish when the Bigelow would have caught fish (a zero catch of yellowtail by the Albatross gets converted to a zero catch by the Bigelow.) In years of high abundance, there is probably not much bias introduced, because many of the Albatross tows caught yellowtail, but the bias could be noticable in years of low abundance. The magnitude of this bias cannot be easily estimated and all the Albatross years (2008 and prior) are assumed equivalent to the Bigelow years in these plots."),
-        p("The violin plots in the Recent tab are based on 1,000 values coming from each of the surveys in a given year. The survey CV values are used to create lognormal standard deviations using the formula sd = sqrt(log(1 + CV*CV)). These survey and year specific sd values are then used to generate random values from a lognormal distribution with mean one. The random deviates then multiply the survey kg/tow to generate uncertainty in the survey observations. This approach assumes independence of the random deviations among the surveys within a year and that the only source of uncertainty in the calculation of the average survey biomass comes from the stratified mean estimates of the surveys. Additional sources of uncertainty, such as variability in the survey q, area swept by a tow, and survey area are not included in this variability."),
+        p("The violin plots in the Recent tab are based on 1,000 values coming from each of the surveys in a given year. For the original distributions, the survey CV values are used to create lognormal standard deviations using the formula sd = sqrt(log(1 + CV*CV)). These survey and year specific sd values are then used to generate random values from a lognormal distribution with mean one. The random deviates then multiply the survey kg/tow to generate uncertainty in the survey observations. This approach assumes independence of the random deviations among the surveys within a year and that the only source of uncertainty in the calculation of the average survey biomass comes from the stratified mean estimates of the surveys. Additional sources of uncertainty, such as variability in the survey q, area swept by a tow, and survey area are not included in this variability. For the Miller et al. distributions, the original approach is used for the DFO survey but bootstrapped values are used for the two NEFSC surveys. These bootstrapped values resample the paired stations in the chainsweep experiment, the annual survey data, and the length-weight observations from each annual survey (see Miller et al. for complete bootstrapping details)."),
         p("There are a number of caveats associated with this approach. Past performance does not ensure future benefits. The relationships that have been observed in the past may not adequately predict what happens in the future, especially since there is no mechanistic model underlying these values. For example, large changes in fishery selectivity could create changes in the relationship between survey catch and fishery catch. This approach, along with the Empirical Approach, assumes that at least one survey is available, but is expected to perform best when all three surveys are available. Similarly, changes in how the survey observations of catch/tow are expanded to survey biomass would require recalculations for both this approach and the Empirical Approach."),
         p("Code for this R Shiny app is available at ",
           a("https://github.com/cmlegault/limiter", href="https://github.com/cmlegault/limiter", target="_blank")),
@@ -181,6 +181,7 @@ server <- function(input, output) {
     output$myTable <- renderTable({
         data.frame(Limits = input$Limits,
                    Catch6 = round(0.06 * input$Limits, 0),
+                   Catch7 = round(0.07 * input$Limits, 0),
                    Quota = input$Quota,
                    ExplRate = round(100 * input$Quota / input$Limits, 1)
                    )
@@ -243,7 +244,7 @@ server <- function(input, output) {
       if (input$example == "Empirical"){
         exlimits <- NA
         exdf <- data.frame(exavgb = exavgb, 
-                           exsetquota = exavgb * 0.06) %>%
+                           exsetquota = exavgb * 0.07) %>%
           mutate(exer = exsetquota / exavgb)
       }
       
@@ -253,7 +254,7 @@ server <- function(input, output) {
         exdf <- data.frame(exavgb = exavgb) %>%
           mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
                                        (exavgb > exlimits[2]), 
-                                     exavgb * 0.06, exquota)) %>%
+                                     exavgb * 0.07, exquota)) %>%
           mutate(exer = exsetquota / exavgb)
       }
 
@@ -263,17 +264,17 @@ server <- function(input, output) {
         exdf <- data.frame(exavgb = exavgb) %>%
           mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
                                        (exavgb > exlimits[2]), 
-                                     exavgb * 0.06, exquota)) %>%
+                                     exavgb * 0.07, exquota)) %>%
           mutate(exer = exsetquota / exavgb)
       }
       
       if (input$example == "Quota First"){
-        exlimits <- c(800, 2600)
+        exlimits <- c(800, 2300)
         exquota <- 160
         exdf <- data.frame(exavgb = exavgb) %>%
           mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
                                        (exavgb > exlimits[2]), 
-                                     exavgb * 0.06, exquota)) %>%
+                                     exavgb * 0.07, exquota)) %>%
           mutate(exer = exsetquota / exavgb)
       }
 
@@ -281,8 +282,8 @@ server <- function(input, output) {
         exlimits <- NA
         exquota <- NA
         exdf <- data.frame(exavgb = exavgb) %>%
-          mutate(exer = ifelse((exavgb > 2600),
-                               (0.06 + (exavgb-2600) * (0.275-0.06) / (63900-2600)), 0.06)) %>%
+          mutate(exer = ifelse((exavgb > 2300),
+                               (0.07 + (exavgb-2300) * (0.275-0.07) / (63900-2300)), 0.07)) %>%
           mutate(exsetquota = exer * exavgb)
       }
       
@@ -292,7 +293,7 @@ server <- function(input, output) {
         exdf <- data.frame(exavgb = exavgb) %>%
           mutate(exsetquota = ifelse((exavgb < exlimits[1]) |
                                        (exavgb > exlimits[2]), 
-                                     exavgb * 0.06, exquota)) %>%
+                                     exavgb * 0.07, exquota)) %>%
           mutate(exer = exsetquota / exavgb)
       }
 
@@ -316,27 +317,27 @@ server <- function(input, output) {
     
     output$exText <- renderText({
       if (input$example == "Empirical"){
-        "The Empirical Approach does not contain any average survey biomass limits (vertical red lines). In this example, the plots use the most recent value of 6% for the exploitation rate regardless of the average survey biomass. This results in a linear relationship between the quota and the average survey biomass (with slope 0.06). In every recent assessment, time has been spent discussing whether 6% is the appropriate exploitation rate to use, and these discussions would be expected to occur in future assessments. There is also no pre-set value that would indicate the stock has increased or decreased sufficiently to justify a different exploitation rate. So every assessment will have this discussion, with the outcome depending to some extent on who is in the room."
+        "The Empirical Approach does not contain any average survey biomass limits (vertical red lines). In this example, the plots use the exploitation rate of 7% associated with using the new Miller et al. surveys regardless of the average survey biomass. This results in a linear relationship between the quota and the average survey biomass (with slope 0.07). In every recent assessment, time has been spent discussing what is the appropriate exploitation rate to use, and these discussions would be expected to occur in future assessments. There is also no pre-set value that would indicate the stock has increased or decreased sufficiently to justify a different exploitation rate. So every assessment will have this discussion, with the outcome depending to some extent on who is in the room."
       }
       
       else if (input$example == "Initial"){
-        "These plots reflect the initial settings when the Shiny app is opened. The average survey biomass limits are set at 600 and 5,000 mt (red vertical lines) and the constant quota is 200 mt. In this example, the Empirical Approach exploitation rate of 6% is assumed to apply outside the average survey biomass limits. This combination of average survey biomass limits and quota results in a declining exploitation rate as the average survey biomass increases between the average survey biomass limits. At the lower limit of 600 mt, the exploiation rate is 33.3%, which may be considered too high by some. At the upper limit of 5,000 mt, the exploitation rate is 4%, which is below the current Empirical Approach rate. There are discontinuities in both catch and exploitation rate as the average survey biomass crosses both average survey biomass limits."
+        "These plots reflect the initial settings when the Shiny app is opened. The average survey biomass limits are set at 600 and 5,000 mt (red vertical lines) and the constant quota is 200 mt. In this example, the Empirical Approach exploitation rate of 7% associated with the new Miller et al. surveys is assumed to apply outside the average survey biomass limits. This combination of average survey biomass limits and quota results in a declining exploitation rate as the average survey biomass increases between the average survey biomass limits. At the lower limit of 600 mt, the exploiation rate is 33.3%, which may be considered too high by some. At the upper limit of 5,000 mt, the exploitation rate is 4%, which is below the current Empirical Approach rate. There are discontinuities in both catch and exploitation rate as the average survey biomass crosses both average survey biomass limits."
       }
       
       else if(input$example == "Limits First"){
-        "One way to use this tool is to focus on the average survey biomass limits first. For example, if at least 80% of the distributions of average survey biomass are desired to be within the average survey biomass limits each year since 2014, then the average survey biomass limits could be set at 900 and 8,500 mt. The next step could be to select a quota that balances the exploitation rate within the average survey biomass limits, for example 300 mt (as shown above). This results in exploitation rates of 33.3% and 3.5% at the average survey biomass limits. Alternatively, a maximum exploiation rate could be used based on the lower limit, or a minimum exploitation rate based on the upper limit. This example again shows the Empirical Approach exploitation rate of 6% outside the average survey biomass limits."
+        "One way to use this tool is to focus on the average survey biomass limits first. For example, if at least 80% of the distributions of average survey biomass are desired to be within the average survey biomass limits each year since 2014, then the average survey biomass limits could be set at 900 and 8,500 mt. The next step could be to select a quota that balances the exploitation rate within the average survey biomass limits, for example 300 mt (as shown above). This results in exploitation rates of 33.3% and 3.5% at the average survey biomass limits. Alternatively, a maximum exploiation rate could be used based on the lower limit, or a minimum exploitation rate based on the upper limit. This example again shows the Empirical Approach exploitation rate of 7% outside the average survey biomass limits."
       }
       
       else if(input$example == "Quota First"){
-        "Another way to use this tool is to set the quota first. In this example, a quota of 150 mt was selected based on recent quotas and the needs of the fishery. Once the quota is set, the lower limit was found by not allowing the exploitation rate to exceed 20%, resulting in the lower limit of 800 mt. The upper limit was set to remove the discontinuities in the catch and exploitation plots when the Empirical Approach was applied outside the average survey biomass limits. This resulted in the calculated value of 2,666.67 mt, which was rounded down to 2,600 mt."
+        "Another way to use this tool is to set the quota first. In this example, a quota of 150 mt was selected based on recent quotas and the needs of the fishery. Once the quota is set, the lower limit was found by not allowing the exploitation rate to exceed 20%, resulting in the lower limit of 800 mt. The upper limit was set to remove the discontinuities in the catch and exploitation plots when the Empirical Approach was applied outside the average survey biomass limits. This resulted in the calculated value of 2,285.71 mt, which was rounded up to 2,300 mt."
       }
       
       else if(input$example == "Ref Points"){
-        "This tool can also be used in conjunction with setting reference points. The current fishing mortality reference level (Fref) is 0.25, based on F0.1 and F40% from a VPA which assumed an M of 0.2. This reference point cannot be used directly anymore, but could be converted to an exploitation rate using the equation ER = F(1-exp(-Z))/Z, which results in 0.20. Alternatively, the historical tab can be used to look for a period when catch and biomass were thought to be in a level near MSY or Bmsy. For example, if the years 1967-1976 were thought to be appropriate, the averages during this period could be used as reference points, producing Bref = 63,900 mt, Catchref = 17,600 mt, and ERref = 27.5%. The ER reference points could then be used to limit the exploitation rate in any of the other approaches. The Bref could be used to determine when to change from a reduced exploitation rate to ERref, perhaps gradually as the average survey biomass increased. The example plotted has the exploitation rate increase linearly from 6% at 2,600 mt to 27.5% at 63,900 mt. Note the large change in the y-axis scale for the quota plot."
+        "This tool can also be used in conjunction with setting reference points. The current fishing mortality reference level (Fref) is 0.25, based on F0.1 and F40% from a VPA which assumed an M of 0.2. This reference point cannot be used directly anymore, but could be converted to an exploitation rate using the equation ER = F(1-exp(-Z))/Z, which results in 0.20. Alternatively, the historical tab can be used to look for a period when catch and biomass were thought to be in a level near MSY or Bmsy. For example, if the years 1967-1976 were thought to be appropriate, the averages during this period could be used as reference points, producing Bref = 63,900 mt, Catchref = 17,600 mt, and ERref = 27.5%. The ER reference points could then be used to limit the exploitation rate in any of the other approaches. The Bref could be used to determine when to change from a reduced exploitation rate to ERref, perhaps gradually as the average survey biomass increased. The example plotted has the exploitation rate increase linearly from 7% at 2,300 mt to 27.5% at 63,900 mt. Note the large change in the y-axis scale for the quota plot."
       }
       
       else if(input$example == "Recent Tab Values"){
-        paste0("These plots show the values currently selected in the Recent tab: average survey biomass limits of ", input$Limits[1], " and ", input$Limits[2], " mt and quota of ", input$Quota, " mt. The current Empirical Approach exploitation rate of 6% is assumed to apply when the average survey biomass is outside the selected limits in these plots, but different decisions could be made in these situations. Changes to the Limits for Average Survey Biomass or Constant Quota (mt) sliders in the Recent tab are reflected in these plots. Changes to the other two sliders in the Recent tab (First Year to Show in Plot and Blue Percent Line in Lower Plot) have no effect on the plots shown here.")
+        paste0("These plots show the values currently selected in the Recent tab: average survey biomass limits of ", input$Limits[1], " and ", input$Limits[2], " mt and quota of ", input$Quota, " mt. The Empirical Approach exploitation rate of 7% associated with the Miller et al. surveys is assumed to apply when the average survey biomass is outside the selected limits in these plots, but different decisions could be made in these situations. Changes to the Limits for Average Survey Biomass or Constant Quota (mt) sliders in the Recent tab are reflected in these plots. Changes to the other two sliders in the Recent tab (First Year to Show in Plot and Blue Percent Line in Lower Plot) have no effect on the plots shown here.")
       }
       
     })
